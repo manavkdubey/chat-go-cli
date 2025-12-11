@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p/core/crypto"
@@ -29,15 +30,21 @@ func handleStream(s network.Stream) {
 }
 func readData(rw *bufio.ReadWriter) {
 	for {
-		str, _ := rw.ReadString('\n')
+		bytes, err := rw.ReadBytes('\n')
+		if err != nil {
+			log.Println(err)
 
-		if str == "" {
+		}
+
+		if len(bytes) == 0 {
 			return
 		}
-		if str != "\n" {
+		msg, _ := BytesToMessage(bytes)
+		if msg.Message != "\n" {
+			// fmt.Printf(msg.User.Name, msg.Message)
 			// Green console colour: 	\x1b[32m
 			// Reset console colour: 	\x1b[0m
-			fmt.Printf("\x1b[32m%s\x1b[0m> ", str)
+			fmt.Printf("\x1b[32m%s : %s\x1b[0m\n>", msg.User.Name, msg.Message)
 		}
 
 	}
@@ -53,11 +60,29 @@ func writeData(rw *bufio.ReadWriter) {
 			log.Println(err)
 			return
 		}
-
-		rw.WriteString(fmt.Sprintf("%s\n", sendData))
-		rw.Flush()
+		sendData = strings.TrimRight(sendData, "\r\n") // remove user's newline
+		user := User{Id: "abc", Name: "User", PasswordHash: "0"}
+		bytes, err := MessageBytes(sendData, user)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+		// write JSON bytes, then a newline delimiter so receiver can ReadBytes('\n')
+		if _, err := rw.Write(bytes); err != nil {
+			log.Println("write error:", err)
+			return
+		}
+		if _, err := rw.Write([]byte("\n")); err != nil {
+			log.Println("write delimiter error:", err)
+			return
+		}
+		if err := rw.Flush(); err != nil {
+			log.Println("flush error:", err)
+			return
+		}
 	}
 }
+
 func makeHost(port int, randomness io.Reader) (host.Host, error) {
 
 	prvKey, _, err := crypto.GenerateKeyPairWithReader(crypto.RSA, 2048, randomness)
@@ -86,7 +111,7 @@ func startPeer(_ context.Context, h host.Host, streamHandler network.StreamHandl
 		log.Println("was not able to find actual local port")
 		return
 	}
-	log.Printf("Run 'go run main.go -d /ip4/127.0.0.1/tcp/%v/p2p/%s' on another console.\n", port, h.ID())
+	log.Printf("Run 'go run . -d /ip4/127.0.0.1/tcp/%v/p2p/%s' on another console.\n", port, h.ID())
 	log.Println("Waiting for incoming connection")
 	log.Println()
 }
