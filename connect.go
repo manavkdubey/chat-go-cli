@@ -15,6 +15,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/peerstore"
+	"github.com/manavkdubey/chatapp/user"
 	"github.com/multiformats/go-multiaddr"
 )
 
@@ -61,7 +62,7 @@ func writeData(rw *bufio.ReadWriter) {
 			return
 		}
 		sendData = strings.TrimRight(sendData, "\r\n") // remove user's newline
-		user := User{Id: "abc", Name: "User", PasswordHash: "0"}
+		user := user.User{Id: "abc", Name: "User", PasswordHash: "0"}
 		bytes, err := MessageBytes(sendData, user)
 		if err != nil {
 			log.Println(err)

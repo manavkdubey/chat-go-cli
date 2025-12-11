@@ -3,20 +3,16 @@ package main
 import (
 	"encoding/json"
 	"strings"
+
+	"github.com/manavkdubey/chatapp/user"
 )
 
 type Message struct {
-	User    User   `json:"user"`
-	Message string `json:"message"`
+	User    user.User `json:"user"`
+	Message string    `json:"message"`
 }
 
-type User struct {
-	Name         string `json:"name"`
-	Id           string `json:"id"`
-	PasswordHash string `json:"password_hash"`
-}
-
-func MessageBytes(message string, user User) ([]byte, error) {
+func MessageBytes(message string, user user.User) ([]byte, error) {
 	msg := Message{Message: message, User: user}
 	return json.Marshal(msg)
 }
